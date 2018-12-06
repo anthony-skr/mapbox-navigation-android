@@ -206,7 +206,7 @@ class MapRouteLine {
     updateAllLayersVisibilityTo(isVisible);
   }
 
-  boolean retrieveVisibilty() {
+  boolean retrieveVisibility() {
     return isVisible;
   }
 
@@ -236,6 +236,8 @@ class MapRouteLine {
     for (Layer routeLayer : routeLayers) {
       mapboxMap.removeLayer(routeLayer);
     }
+    mapboxMap.removeSource(routeLineSource);
+    mapboxMap.removeSource(wayPointSource);
   }
 
   private void drawRoutes(List<FeatureCollection> routeFeatureCollections) {
@@ -266,17 +268,19 @@ class MapRouteLine {
   }
 
   private void generateRouteFeatureCollectionsFrom(List<DirectionsRoute> routes) {
-    new FeatureProcessingTask(routes, new OnRouteFeaturesProcessedCallback() {
-      @Override
-      public void onRouteFeaturesProcessed(List<FeatureCollection> routeFeatureCollections,
-                                           HashMap<LineString, DirectionsRoute> routeLineStrings) {
-        MapRouteLine.this.routeFeatureCollections.addAll(routeFeatureCollections);
-        MapRouteLine.this.routeLineStrings.putAll(routeLineStrings);
-        drawRoutes(routeFeatureCollections);
-        drawWayPoints();
-      }
-    }).execute();
+    new FeatureProcessingTask(routes, routeFeaturesProcessedCallback).execute();
   }
+
+  private OnRouteFeaturesProcessedCallback routeFeaturesProcessedCallback = new OnRouteFeaturesProcessedCallback() {
+    @Override
+    public void onRouteFeaturesProcessed(List<FeatureCollection> routeFeatureCollections,
+                                         HashMap<LineString, DirectionsRoute> routeLineStrings) {
+      MapRouteLine.this.routeFeatureCollections.addAll(routeFeatureCollections);
+      MapRouteLine.this.routeLineStrings.putAll(routeLineStrings);
+      drawRoutes(routeFeatureCollections);
+      drawWayPoints();
+    }
+  };
 
   private void drawWayPoints() {
     DirectionsRoute primaryRoute = directionsRoutes.get(primaryRouteIndex);
@@ -306,13 +310,15 @@ class MapRouteLine {
     if (newPrimaryIndex < 0 || newPrimaryIndex > routeFeatureCollections.size() - 1) {
       return;
     }
-    new PrimaryRouteUpdateTask(newPrimaryIndex, routeFeatureCollections, new OnPrimaryRouteUpdatedCallback() {
-      @Override
-      public void onPrimaryRouteUpdated(List<FeatureCollection> updatedRouteCollections) {
-        drawRoutes(updatedRouteCollections);
-      }
-    }).execute();
+    new PrimaryRouteUpdateTask(newPrimaryIndex, routeFeatureCollections, primaryRouteUpdatedCallback).execute();
   }
+
+  private OnPrimaryRouteUpdatedCallback primaryRouteUpdatedCallback = new OnPrimaryRouteUpdatedCallback() {
+    @Override
+    public void onPrimaryRouteUpdated(List<FeatureCollection> updatedRouteCollections) {
+      drawRoutes(updatedRouteCollections);
+    }
+  };
 
   private void findRouteBelowLayerId() {
     if (belowLayer == null || belowLayer.isEmpty()) {

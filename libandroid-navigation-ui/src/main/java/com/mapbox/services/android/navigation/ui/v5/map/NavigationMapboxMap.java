@@ -7,6 +7,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
@@ -283,16 +284,11 @@ public class NavigationMapboxMap {
   }
 
   /**
-   * This method will update the route visibility.
-   * <p>
-   * The visibility will include the main route, alternatives,
-   * and the upcoming maneuver arrow.
-   *
-   * @param isVisible true to show, false otherwise.
+   * Will remove the drawn route displayed on the map.  Does nothing
+   * if no route is drawn.
    */
-  public void updateRouteVisibility(boolean isVisible) {
-    mapRoute.updateRouteVisibilityTo(isVisible);
-    mapRoute.updateRouteArrowVisibilityTo(isVisible);
+  public void removeRoute() {
+    mapRoute.removeRoute();
   }
 
   /**
@@ -427,7 +423,7 @@ public class NavigationMapboxMap {
   }
 
   /**
-   * Should be used in {@link FragmentActivity#onDestroy()} to ensure proper
+   * Should be used in {@link FragmentActivity#onDestroy()} or {@link Fragment#onDestroyView()} to ensure proper
    * accounting for the lifecycle.
    */
   public void onDestroy() {

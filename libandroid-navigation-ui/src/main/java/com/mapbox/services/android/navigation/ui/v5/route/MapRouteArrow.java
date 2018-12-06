@@ -11,6 +11,7 @@ import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.content.res.AppCompatResources;
 
 import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.maps.MapView;
@@ -86,8 +87,6 @@ class MapRouteArrow {
   private List<Layer> arrowLayers;
   private GeoJsonSource arrowShaftGeoJsonSource;
   private GeoJsonSource arrowHeadGeoJsonSource;
-  private Feature arrowShaftGeoJsonFeature = Feature.fromGeometry(Point.fromLngLat(0, 0));
-  private Feature arrowHeadGeoJsonFeature = Feature.fromGeometry(Point.fromLngLat(0, 0));
 
   private final MapView mapView;
   private final MapboxMap mapboxMap;
@@ -135,6 +134,8 @@ class MapRouteArrow {
     for (Layer arrowLayer : arrowLayers) {
       mapboxMap.removeLayer(arrowLayer);
     }
+    mapboxMap.removeSource(arrowHeadGeoJsonSource);
+    mapboxMap.removeSource(arrowShaftGeoJsonSource);
   }
 
   private List<Point> obtainArrowPointsFrom(RouteProgress routeProgress) {
@@ -157,13 +158,13 @@ class MapRouteArrow {
 
   private void updateArrowShaftWith(List<Point> points) {
     LineString shaft = LineString.fromLngLats(points);
-    arrowShaftGeoJsonFeature = Feature.fromGeometry(shaft);
+    Feature arrowShaftGeoJsonFeature = Feature.fromGeometry(shaft);
     arrowShaftGeoJsonSource.setGeoJson(arrowShaftGeoJsonFeature);
   }
 
   private void updateArrowHeadWith(List<Point> points) {
     double azimuth = TurfMeasurement.bearing(points.get(points.size() - 2), points.get(points.size() - 1));
-    arrowHeadGeoJsonFeature = Feature.fromGeometry(points.get(points.size() - 1));
+    Feature arrowHeadGeoJsonFeature = Feature.fromGeometry(points.get(points.size() - 1));
     arrowHeadGeoJsonFeature.addNumberProperty(ARROW_BEARING, (float) MathUtils.wrap(azimuth, 0, MAX_DEGREES));
     arrowHeadGeoJsonSource.setGeoJson(arrowHeadGeoJsonFeature);
   }
@@ -186,13 +187,13 @@ class MapRouteArrow {
     mapboxMap.addLayerAbove(shaftLayer, headCasingLayer.getId());
     mapboxMap.addLayerAbove(headLayer, shaftLayer.getId());
 
-    initializeArrowLayers(shaftLayer, shaftCasingLayer, headLayer, headCasingLayer);
+    createArrowLayerList(shaftLayer, shaftCasingLayer, headLayer, headCasingLayer);
   }
 
   private void initializeArrowShaft() {
     arrowShaftGeoJsonSource = new GeoJsonSource(
       ARROW_SHAFT_SOURCE_ID,
-      arrowShaftGeoJsonFeature,
+      FeatureCollection.fromFeatures(new Feature[] {}),
       new GeoJsonOptions().withMaxZoom(16)
     );
     mapboxMap.addSource(arrowShaftGeoJsonSource);
@@ -201,7 +202,7 @@ class MapRouteArrow {
   private void initializeArrowHead() {
     arrowHeadGeoJsonSource = new GeoJsonSource(
       ARROW_HEAD_SOURCE_ID,
-      arrowShaftGeoJsonFeature,
+      FeatureCollection.fromFeatures(new Feature[] {}),
       new GeoJsonOptions().withMaxZoom(16)
     );
     mapboxMap.addSource(arrowHeadGeoJsonSource);
@@ -340,8 +341,8 @@ class MapRouteArrow {
     );
   }
 
-  private void initializeArrowLayers(LineLayer shaftLayer, LineLayer shaftCasingLayer, SymbolLayer headLayer,
-                                     SymbolLayer headCasingLayer) {
+  private void createArrowLayerList(LineLayer shaftLayer, LineLayer shaftCasingLayer, SymbolLayer headLayer,
+                                    SymbolLayer headCasingLayer) {
     arrowLayers = new ArrayList<>();
     arrowLayers.add(shaftCasingLayer);
     arrowLayers.add(shaftLayer);
